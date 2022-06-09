@@ -1,0 +1,87 @@
+version: '3.8'   
+  
+services:
+    web:
+      build: .
+      command: python src/manage.py runserver 0.0.0.0:8000
+      volumes:
+        - .:/code
+      ports:
+        - "8000:8000"
+      env_file:
+        - .env
+      depends_on:
+        - db
+    db:
+      container_name: my_db
+      hostname: great_db
+      image: debezium/postgres
+      ports:
+        - "5432:5432"
+      restart: unless-stopped
+      env_file:
+        - .env
+      volumes_from:
+        - pg_data
+    pg_data:
+      image: alpine:latest
+      volumes:
+        - /var/lib/postgresql/data/pgdata
+      command: "true"
+    kafka:
+      hostname: kafka
+      image: debezium/kafka
+      ports:
+        - "9092:9092"
+      depends_on:
+        - zookeeper
+      environment:
+        ZOOKEEPER_CONNECT: zookeeper
+        #HOST_NAME: kafka
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    zookeeper:
+      hostname: zookeeper
+      image: debezium/zookeeper
+      ports:
+        - "2181:2181"
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+    connect:
+      hostname: connect
+      image: debezium/connect
+      ports:
+        - "8083:8083"
+      depends_on:
+        - kafka
+        - db
+      environment:
+        CONFIG_STORAGE_TOPIC: my_connect_configs
+        OFFSET_STORAGE_TOPIC: my_connect_offsets
+        STATUS_STORAGE_TOPIC: my_connect_statuses
+        GROUP_ID: a80cf43e-b40b-4d4d-8006-5aa7ff997def
+        BOOTSTRAP_SERVERS: kafka:9092
+    connect-ui:
+      hostname: connect_ui
+      image: debezium/debezium-ui
+      ports:
+        - "8080:8080"
+      depends_on:
+        - connect
+      environment:
+        KAFKA_CONNECT_URIS: http://connect:8083
+    kafka-ui:
+      hostname: kafka_ui
+      image: provectuslabs/kafka-ui
+      ports:
+        - "8081:8080"
+      environment:
+        KAFKA_CLUSTERS_0_NAME: debezium-kafka
+        KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
