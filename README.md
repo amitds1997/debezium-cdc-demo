@@ -1,61 +1,41 @@
-# Django CRUD Operations Using PostgreSQL
-This is a Django Student Information Register for performing CRUD operations using a PostgreSQL database
+The website is thanks to [Django-CRUD-Operations-Using-PostgreSQL](https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL/)
 
-![](https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL/blob/master/src/static/img/Screenshot-1.PNG)
+## PRE-REQUISITES
+1. `docker-compose up`
+2. `docker exec -it debezium-cdc-demo-web-1 python src/manage.py migrate`
 
-# Functionalities
+## IMPORTANT URLs
+Django App: http://localhost:8000
+Connect UI: http://localhost:8080 
+Kafka UI: http://localhost:8081
+For more info, check `docker-compose.yml`
 
-- You Can Add Student Information
-
-![](https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL/blob/master/src/static/img/Screenshot-2.PNG)
-
-- You Can Update Student Information
-
-![](https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL/blob/master/src/static/img/Screenshot-3.PNG)
-
-- You Can Delete Student Information
-
-![](https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL/blob/master/src/static/img/Screenshot-4.PNG)
-
-- You Can View Individual Student Information
-
-![](https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL/blob/master/src/static/img/Screenshot-5.PNG)
-
-# Project Setup Instructions
-1) Git clone the repository 
+## TESTING
+To directly see the WAL events, create a new logical slot and start trailing. Do this from inside the postgres DB container so that you have everything inside the container.
 ```
-https://github.com/steve-njuguna-k/Django-CRUD-Operations-Using-PostgreSQL.git
+# Login inside the docker container
+docker exec -it my_db /bin/bash
+
+# Create a new logical slot
+PG_PASSWORD=great_password pg_recvlogical -U great_user -d great_db -p 5432 -h great_db --create-slot --slot manual_trail -P wal2json
+
+# Connect to the created slot and start trailing events
+PG_PASSWORD=great_password pg_recvlogical -U great_user -d great_db -p 5432 -h great_db --slot manual_trail --start -o pretty-print=1 -f -
+
+# Make changes in database either from frontend or backend
 ```
 
-2. Go To Project Directory
+To go the debezium route,
+1. Create a new PostgreSQL connector.
+2. Final JSON should look similar to
 ```
-cd Django-CRUD-Operations-Using-PostgreSQL
+{
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "database.user": "great_user",
+  "database.dbname": "great_db",
+  "database.hostname": "great_db",
+  "database.password": "**********",
+  "name": "crud-postgres-db-connector",
+  "database.server.name": "crud.postgres.db"
+}
 ```
-3. Create Virtual Environment
-```
-virtualenv env
-```
-4. Active Virtual Environment
-```
-env\scripts\activate
-```
-5. Install Requirements File
-```
-pip install -r requirements.txt
-```
-6. Make Migrations
-```
-py manage.py makemigrations
-```
-7. Migrate Database
-```
-py manage.py migrate
-```
-8. Run Project
-```
-py manage.py runserver
-```
-
-© 2021 Steve Njuguna
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
