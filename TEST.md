@@ -1,6 +1,6 @@
 ## PRE-REQUISITES
 1. `docker-compose up`
-2. `docker exec -it django-crud-operations-using-postgresql-web-1 python src/manage.py migrate`
+2. `docker exec -it debezium-cdc-demo-web-1 python src/manage.py migrate`
 
 ## IMPORTANT URLs
 Django App: http://localhost:8000
